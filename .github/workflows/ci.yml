@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cpu-reference:
+    # CPU correctness oracle — builds and runs with no GPU.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build + test (CPU reference only)
+        run: |
+          cmake -S . -B build-cpu -DBUILD_CUDA=OFF
+          cmake --build build-cpu -j
+          ctest --test-dir build-cpu --output-on-failure
+
+  cuda-compile:
+    # Compile + link the CUDA benchmark in a CUDA devel container. No GPU is
+    # present, so this verifies the kernels build and link against cuBLAS;
+    # running the benchmark happens on a real GPU box.
+    runs-on: ubuntu-latest
+    container: nvidia/cuda:12.4.1-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends cmake build-essential git
+      - name: Configure + compile (no GPU execution)
+        run: |
+          cmake -S . -B build -DBUILD_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=80
+          cmake --build build -j

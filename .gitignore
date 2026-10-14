@@ -1,0 +1,8 @@
+build/
+build-cpu/
+*.o
+*.ncu-rep
+*.nsys-rep
+*.qdrep
+.cache/
+compile_commands.json
